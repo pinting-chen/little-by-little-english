@@ -19,15 +19,32 @@ const dailyLessons = [
 
 const renderBeforeDaily = render;
 render = function () {
+  if (page === 'daily') {
+    document.querySelectorAll('nav button').forEach(button => button.classList.toggle('active', button.dataset.page === 'home'));
+    $('#view').innerHTML = '<button type="button" id="daily-home">← 回首頁</button>';
+    $('#daily-home').onclick = () => go('home');
+    renderDaily();
+    return;
+  }
   renderBeforeDaily();
-  if (page === 'home') renderDaily();
+  if (page === 'home') {
+    const hero = $('#view .hero');
+    const review = hero.querySelector('[data-go="review"]');
+    const actions = document.createElement('div');
+    actions.className = 'daily-words';
+    const completed = data.dailyLesson?.date === today();
+    actions.innerHTML = `<button type="button" class="primary" id="open-daily">${completed ? '回顧今天的新字' : '學新字'}<span class="button-en" lang="en">${completed ? 'View Today’s Words' : 'Learn New Words'}</span></button><button type="button" class="primary" id="open-review">複習<span class="button-en" lang="en">Review · ${data.entries.filter(due).length} 筆待複習</span></button>`;
+    review.replaceWith(actions);
+    $('#open-daily').onclick = () => go('daily');
+    $('#open-review').onclick = () => go('review');
+  }
 };
 
 function renderDaily() {
   const root = document.createElement('section');
   root.id = 'daily-lesson';
   root.className = 'card daily-lesson';
-  document.querySelector('#view .hero').after(root);
+  $('#view').append(root);
   const date = today();
   const saved = data.dailyLesson;
   const done = Number.isInteger(saved?.done) && saved.done >= 0 ? saved.done : 0;
