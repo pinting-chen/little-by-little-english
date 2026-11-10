@@ -9,7 +9,8 @@ function coreIndex() {
 }
 function nextCoreBatch() {
   const entries = coreIndex();
-  return coreWords.filter(([en]) => !entries.get(en.toLowerCase())?.coreStatus).slice(0, batchSize);
+  const unit = a1Units.find(([,words]) => words.some(([en]) => !entries.get(en.toLowerCase())?.coreStatus));
+  return unit ? unit[1].filter(([en]) => !entries.get(en.toLowerCase())?.coreStatus).slice(0,batchSize) : [];
 }
 function markCore(en, zh, status) {
   let entry = coreIndex().get(en.toLowerCase());
@@ -31,13 +32,14 @@ function renderCoreCard() {
   const current = coreBatch.find(word => !isMarked(word));
   const count = coreWords.filter(isMarked).length;
   const [en, zh] = current || [];
+  const unitTitle = a1Units.find(([,words])=>words.includes(current || coreBatch[0]))?.[0] || '基礎喚醒';
   $('#view').innerHTML = `<button type="button" id="core-home">← 回首頁</button>
     <section class="card daily-lesson">
-      <p class="eyebrow">CEFR A1</p><h2>基礎喚醒</h2>
+      <p class="eyebrow">CEFR A1</p><h2>${esc(unitTitle)}</h2>
       <p class="muted" aria-live="polite">${current ? `這一批第 ${coreBatch.indexOf(current) + 1}／${coreBatch.length} 字` : '這一批已完成'} · 累計 ${count}／${coreWords.length} 字</p>
       ${current ? `<article class="core-word">
         <h3 lang="en" tabindex="-1" id="core-card-word">${esc(en)}</h3>
-        <details><summary>看中文意思</summary><p>${esc(zh)}</p></details>
+        <p class="core-card-meaning">${esc(zh)}</p>
         <div class="core-tools"><button type="button" id="core-card-audio">聽發音</button><button type="button" class="primary" id="core-card-known">已會</button><button type="button" id="core-card-review">加入複習</button></div>
       </article>` : `<p>${count===coreWords.length ? '已盤點完 A1 基礎字表。' : '要繼續學，還是先複習？'}</p><div class="core-tools">${count<coreWords.length ? '<button type="button" class="primary" id="core-next">繼續下一批</button>' : ''}<button type="button" id="core-review">開始複習</button></div>`}
     </section>`;
@@ -105,12 +107,28 @@ render = function () {
   if (page==='daily') {renderCoreCard();return;}
   priorRender();
   if (page==='home') {
-    const review = $('#view .hero [data-go="review"]');
-    const tools = document.createElement('div');
-    tools.className='daily-words';
-    tools.innerHTML=`<button type="button" class="primary" id="open-core">學新字<span class="button-en" lang="en">Learn New Words</span></button><button type="button" class="primary" id="open-review">複習<span class="button-en" lang="en">Review · ${data.entries.filter(due).length} 筆</span></button>`;
-    review.replaceWith(tools);
-    $('#open-core').onclick=()=>{coreView='batch';go('daily');window.scrollTo(0,0);};
+    const hero = $('#view .hero');
+    const entries = coreIndex();
+    const units = a1Units.map(([title,words]) => ({title,total:words.length,done:words.filter(([en])=>entries.get(en.toLowerCase())?.coreStatus).length}));
+    const active = units.findIndex(unit=>unit.done<unit.total);
+    const next = units[active];
+    const dueCount = data.entries.filter(due).length;
+    hero.innerHTML = `<p class="eyebrow">LITTLE BY LITTLE</p><h1>今日主頁</h1>
+      <div class="today-actions">
+        <button type="button" class="primary" id="open-core">${next?'學新字':'學 A2'}<span class="button-en">${next?esc(next.title):'主題學習'}</span></button>
+        <button type="button" id="open-review">複習<span class="button-en">${dueCount} 筆待複習</span></button>
+      </div>`;
+    hero.nextElementSibling?.classList.contains('stats') && hero.nextElementSibling.remove();
+    const route=document.createElement('section');
+    route.className='card today-route';
+    route.innerHTML=`<div class="today-route-title"><h2>A1 學習路線</h2><button type="button" id="today-overview">學習總覽 →</button></div>
+      <ol>${units.map((unit,i)=>`<li ${i===active?'aria-current="step"':''}><span class="route-step">${unit.done===unit.total?'✓':i+1}</span><span>${esc(unit.title)}</span><span class="muted">${unit.done}/${unit.total}</span></li>`).join('')}</ol>
+      <button type="button" id="today-a2">A2 主題學習 →</button>`;
+    hero.after(route);
+    $('#today-overview').onclick=()=>go('overview');
+    $('#today-a2').onclick=()=>go('a2');
+    document.querySelectorAll('#view .life-grid .lead').forEach(p=>p.remove());
+    $('#open-core').onclick=()=>{coreView='batch';if (!coreBatch.some(([en])=>!entries.get(en.toLowerCase())?.coreStatus))coreBatch=nextCoreBatch();go(next?'daily':'a2');window.scrollTo(0,0);};
     $('#open-review').onclick=()=>go('review');
   }
 };
