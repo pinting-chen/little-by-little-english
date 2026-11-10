@@ -14,7 +14,7 @@ function nextCoreBatch() {
 function markCore(en, zh, status) {
   let entry = coreIndex().get(en.toLowerCase());
   if (!entry) {
-    entry = {id: crypto.randomUUID(), type:'word', en, zh, topic:'日常', note:'基礎 1000 字', level:0, reviews:0};
+    entry = {id: crypto.randomUUID(), type:'word', en, zh, topic:'日常', note:'A1 基礎喚醒', level:0, reviews:0};
     data.entries.push(entry);
   }
   if (!entry.coreStatus) entry.coreClassifiedOn = today();
@@ -33,12 +33,12 @@ function renderCore() {
   const count = known.length + review.length;
   const batchDone = coreBatch.length > 0 && coreBatch.every(([en]) => entries.get(en.toLowerCase())?.coreStatus);
   $('#view').innerHTML = `<button type="button" id="core-home">← 回首頁</button>
-    <section class="card"><p class="eyebrow">CORE VOCABULARY</p><h2>基礎 1,000 字</h2>
-    <p>已分流 ${count}／1,000 字</p><progress class="core-progress" value="${count}" max="1000" aria-label="已分流單字"></progress>
-    <p class="muted">每批 20 字，今天想多學可以繼續下一批。每次選擇都會立即儲存。</p>
+    <section class="card"><p class="eyebrow">CEFR A1</p><h2>第一階段・A1 基礎喚醒</h2>
+    <p>已分流 ${count}／${coreWords.length} 字</p><progress class="core-progress" value="${count}" max="${coreWords.length}" aria-label="已分流單字"></progress>
+    <p class="muted">每批 20 字，先想意思，再揭開中文。不確定就加入複習。每次選擇都會立即儲存。</p>
     <div class="core-tools"><button data-core-view="batch" aria-pressed="${coreView==='batch'}">這一批</button><button data-core-view="all" aria-pressed="${coreView==='all'}">全部</button><button data-core-view="unclassified" aria-pressed="${coreView==='unclassified'}">未分流</button><button data-core-view="known" aria-pressed="${coreView==='known'}">已會單字 · ${known.length}</button><button data-core-view="review" aria-pressed="${coreView==='review'}">複習單字 · ${review.length}</button></div>
     <label id="core-search-label">搜尋基礎字表 <input id="core-search" type="search" placeholder="輸入英文或中文"></label><div class="core-results"></div>
-    <div class="core-tools">${coreView==='batch' && batchDone && count<1000?'<button class="primary" id="core-next">繼續下一批</button>':''}<button id="core-review">開始複習</button></div></section>`;
+    <div class="core-tools">${coreView==='batch' && batchDone && count<coreWords.length?'<button class="primary" id="core-next">繼續下一批</button>':''}<button id="core-review">開始複習</button></div></section>`;
   const results = $('.core-results');
   const search = $('#core-search');
   const filtered = query => rows.filter(([en,zh]) => !query || (en+' '+zh).toLowerCase().includes(query));
