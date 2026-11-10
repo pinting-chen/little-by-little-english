@@ -17,12 +17,15 @@ function localGloss(word){
   const key=word.toLowerCase().trim();
   return exampleTranslations.get(key)||coreWords.find(([en])=>en.toLowerCase()===key)?.[1]||a2Units.flatMap(([, , ,words])=>words).find(([en])=>en.toLowerCase()===key)?.[2]||'';
 }
-const cloudPreview=location.hostname==='127.0.0.1'&&location.port==='8766';
+const localAzure=location.hostname==='127.0.0.1'&&location.port==='8766';
+const hostedAzure=location.origin==='https://pinting-chen.github.io';
+const cloudPreview=localAzure||hostedAzure;
+const azureBase=hostedAzure?'https://little-by-little-api.pinting814.workers.dev':'';
 let previewAudio;
 let speechRequest=0;
 async function previewApi(path,text,slow=false){
-  const response=await fetch('/api/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,slow})});
-  if(!response.ok)throw new Error(response.status===503?'預覽尚未設定 Azure 服務。':'Azure 暫時無法使用，請再試一次。');
+  const response=await fetch(azureBase+'/api/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,slow})});
+  if(!response.ok)throw new Error(response.status===503?'Azure 服務尚未完成設定。':'Azure 暫時無法使用，請再試一次。');
   return response;
 }
 async function listenTranslation(text,slow,status){
