@@ -2,6 +2,7 @@ const batchSize = 20;
 let coreBatch = [];
 let coreView = 'batch';
 let coreLimit = 50;
+let coreUndo = null;
 const priorRender = render;
 
 function coreIndex() {
@@ -18,9 +19,15 @@ function markCore(en, zh, status) {
     entry = {id: crypto.randomUUID(), type:'word', en, zh, topic:'日常', note:'A1 基礎喚醒', level:0, reviews:0};
     data.entries.push(entry);
   }
-  if (!entry.coreStatus) entry.coreClassifiedOn = today();
+  if (!entry.coreStatus) {
+    entry.coreClassifiedOn = today();
+    if (typeof recordLearning==='function' && coreWords.some(([word])=>word.toLowerCase()===en.toLowerCase())) recordLearning({kind:'a1',id:en.toLowerCase()});
+  }
   entry.coreStatus = status;
   entry.level = status === 'known' ? 3 : 1;
+  entry.reviewPaused = false;
+  entry.reviewExcluded = false;
+  delete entry.schedule;
   entry.due = 0;
   if (!data.days.includes(today())) data.days.push(today());
   save();
@@ -32,21 +39,37 @@ function renderCoreCard() {
   const current = coreBatch.find(word => !isMarked(word));
   const count = coreWords.filter(isMarked).length;
   const [en, zh] = current || [];
+  const example = current ? exampleForReview({type:'word',en}) : '';
+  const translation = example && typeof exampleMeaning==='function' ? exampleMeaning(en,example) : '';
+  const ipa = current && typeof studyIPA!=='undefined' ? studyIPA[en.toLowerCase()] : '';
   const unitTitle = a1Units.find(([,words])=>words.includes(current || coreBatch[0]))?.[0] || '基礎喚醒';
   $('#view').innerHTML = `<button type="button" id="core-home">← 回首頁</button>
-    <section class="card daily-lesson">
+    <section class="card daily-lesson study-card">
       <p class="eyebrow">CEFR A1</p><h2>${esc(unitTitle)}</h2>
       <p class="muted" aria-live="polite">${current ? `這一批第 ${coreBatch.indexOf(current) + 1}／${coreBatch.length} 字` : '這一批已完成'} · 累計 ${count}／${coreWords.length} 字</p>
-      ${current ? `<article class="core-word">
+      ${current ? `<article class="core-word flip-in">
         <h3 lang="en" tabindex="-1" id="core-card-word">${esc(en)}</h3>
-        <p class="core-card-meaning">${esc(zh)}</p>
+        ${ipa?`<p class="study-ipa">/${esc(ipa)}/</p>`:''}<p class="core-card-meaning">${esc(zh)}</p>
+        ${example?`<div class="study-example"><strong lang="en">${esc(example)}</strong><p>${esc(translation)}</p><button type="button" id="core-example-audio">聽例句</button></div>`:''}
         <div class="core-tools"><button type="button" id="core-card-audio">聽發音</button><button type="button" class="primary" id="core-card-known">已會</button><button type="button" id="core-card-review">加入複習</button></div>
       </article>` : `<p>${count===coreWords.length ? '已盤點完 A1 基礎字表。' : '要繼續學，還是先複習？'}</p><div class="core-tools">${count<coreWords.length ? '<button type="button" class="primary" id="core-next">繼續下一批</button>' : ''}<button type="button" id="core-review">開始複習</button></div>`}
+    ${coreUndo?'<button type="button" id="core-undo">撤銷上一步</button>':''}
     </section>`;
   $('#core-home').onclick = () => go('home');
+  if ($('#core-undo')) $('#core-undo').onclick=()=>{
+    const {word,prior,batch,day}=coreUndo;
+    const i=data.entries.findIndex(a=>a.type==='word'&&a.en.toLowerCase()===word);
+    if(prior&&i>=0)data.entries[i]=prior;else if(i>=0)data.entries.splice(i,1);
+    if(typeof learningLog==='function'){const log=learningLog();const j=log.findLastIndex(e=>e.kind==='a1'&&e.id===word&&e.day===day);if(j>=0)log.splice(j,1);}
+    coreBatch=batch;coreUndo=null;save();renderCoreCard();
+  };
   if (current) {
+    if ($('#core-example-audio')) $('#core-example-audio').onclick=()=>speakAmericanEnglish(example);
     $('#core-card-audio').onclick = () => speakAmericanEnglish(en);
     function advance(status) {
+      const key=en.toLowerCase();
+      const old=coreIndex().get(key);
+      coreUndo={word:key,prior:old?{...old}:null,batch:coreBatch,day:today()};
       markCore(en, zh, status);
       renderCoreCard();
       ($('#core-card-word') || $('#core-next') || $('#core-review')).focus({preventScroll:true});
@@ -115,14 +138,16 @@ render = function () {
     const dueCount = data.entries.filter(due).length;
     hero.innerHTML = `<p class="eyebrow">LITTLE BY LITTLE</p><h1>今日主頁</h1>
       <div class="today-actions">
-        <button type="button" class="primary" id="open-core">${next?'學新字':'學 A2'}<span class="button-en">${next?esc(next.title):'主題學習'}</span></button>
-        <button type="button" id="open-review">複習<span class="button-en">${dueCount} 筆待複習</span></button>
+        <button type="button" class="today-entry" id="open-core"><span class="entry-icon" aria-hidden="true">Aa</span>${next?'學新字':'學 A2'}<span class="button-en">${next?esc(next.title):'主題學習'}</span></button>
+        <button type="button" class="today-entry" id="open-review"><span class="entry-icon" aria-hidden="true">↻</span>複習<span class="button-en">${dueCount} 筆待複習</span></button>
       </div>`;
     hero.nextElementSibling?.classList.contains('stats') && hero.nextElementSibling.remove();
     const route=document.createElement('section');
     route.className='card today-route';
+    const totalDone=units.reduce((sum,unit)=>sum+unit.done,0);
+    const shown=units.map((unit,i)=>({unit,i})).filter(({i})=>active<0?i===units.length-1:Math.abs(i-active)<=1);
     route.innerHTML=`<div class="today-route-title"><h2>A1 學習路線</h2><button type="button" id="today-overview">學習總覽 →</button></div>
-      <ol>${units.map((unit,i)=>`<li ${i===active?'aria-current="step"':''}><span class="route-step">${unit.done===unit.total?'✓':i+1}</span><span>${esc(unit.title)}</span><span class="muted">${unit.done}/${unit.total}</span></li>`).join('')}</ol>
+      <progress class="core-progress" value="${totalDone}" max="${coreWords.length}" aria-label="A1 已盤點"></progress><ol>${shown.map(({unit,i})=>`<li ${i===active?'aria-current="step"':''}><span class="route-step">${unit.done===unit.total?'✓':i+1}</span><span>${esc(unit.title)}</span><span class="muted">${unit.done}/${unit.total}</span></li>`).join('')}</ol>
       <button type="button" id="today-a2">A2 主題學習 →</button>`;
     hero.after(route);
     $('#today-overview').onclick=()=>go('overview');
