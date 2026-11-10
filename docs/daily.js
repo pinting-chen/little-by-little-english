@@ -24,6 +24,38 @@ function markCore(en, zh, status) {
   if (!data.days.includes(today())) data.days.push(today());
   save();
 }
+function renderCoreCard() {
+  const entries = coreIndex();
+  const isMarked = ([en]) => Boolean(entries.get(en.toLowerCase())?.coreStatus);
+  if (!coreBatch.length) coreBatch = nextCoreBatch();
+  const current = coreBatch.find(word => !isMarked(word));
+  const count = coreWords.filter(isMarked).length;
+  const [en, zh] = current || [];
+  $('#view').innerHTML = `<button type="button" id="core-home">← 回首頁</button>
+    <section class="card daily-lesson">
+      <p class="eyebrow">CEFR A1</p><h2>基礎喚醒</h2>
+      <p class="muted" aria-live="polite">${current ? `這一批第 ${coreBatch.indexOf(current) + 1}／${coreBatch.length} 字` : '這一批已完成'} · 累計 ${count}／${coreWords.length} 字</p>
+      ${current ? `<article class="core-word">
+        <h3 lang="en" tabindex="-1" id="core-card-word">${esc(en)}</h3>
+        <details><summary>看中文意思</summary><p>${esc(zh)}</p></details>
+        <div class="core-tools"><button type="button" id="core-card-audio">聽發音</button><button type="button" class="primary" id="core-card-known">已會</button><button type="button" id="core-card-review">加入複習</button></div>
+      </article>` : `<p>${count===coreWords.length ? '已盤點完 A1 基礎字表。' : '要繼續學，還是先複習？'}</p><div class="core-tools">${count<coreWords.length ? '<button type="button" class="primary" id="core-next">繼續下一批</button>' : ''}<button type="button" id="core-review">開始複習</button></div>`}
+    </section>`;
+  $('#core-home').onclick = () => go('home');
+  if (current) {
+    $('#core-card-audio').onclick = () => speakAmericanEnglish(en);
+    function advance(status) {
+      markCore(en, zh, status);
+      renderCoreCard();
+      ($('#core-card-word') || $('#core-next') || $('#core-review')).focus({preventScroll:true});
+    }
+    $('#core-card-known').onclick = () => advance('known');
+    $('#core-card-review').onclick = () => advance('review');
+  } else {
+    if ($('#core-next')) $('#core-next').onclick = () => {coreBatch = nextCoreBatch();renderCoreCard();};
+    $('#core-review').onclick = () => go('review');
+  }
+}
 function renderCore() {
   const entries = coreIndex();
   const known = coreWords.filter(([en]) => entries.get(en.toLowerCase())?.coreStatus === 'known');
@@ -70,7 +102,7 @@ function renderCore() {
   if ($('#core-next')) $('#core-next').onclick = () => {coreBatch=nextCoreBatch();renderCore();window.scrollTo(0,0);};
 }
 render = function () {
-  if (page==='daily') {renderCore();return;}
+  if (page==='daily') {renderCoreCard();return;}
   priorRender();
   if (page==='home') {
     const review = $('#view .hero [data-go="review"]');
