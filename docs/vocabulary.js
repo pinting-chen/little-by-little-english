@@ -1,5 +1,15 @@
 /* Optional word metadata lives beside existing notebook entries; legacy backups remain valid. */
 const wordGuide={
+goal:{
+  pos:'名詞',band:'A1–A2',topics:['日常','工作','運動'],
+  ling:'可數名詞：a goal 是一個目標，goals 是多個目標。球賽中也可指進球，如 score a goal（進一球）。',
+  formation:'不拆解',parts:'goal 是基本單字，複數加 -s：goal → goals。',
+  root:'可以用 goal 加上其他單字組成新詞，例如 goal-setting（目標設定）。',
+  family:'goal-setting（目標設定） · goal-oriented（以目標為導向的）',
+  collocations:['set a goal（設定目標）','reach a goal（達成目標）','work toward a goal（朝目標努力）'],
+  chunks:['My goal is to + 動詞（我的目標是……）','What’s your goal?（你的目標是什麼？）'],
+  example:'My goal is to practice English every day.',meaning:'我的目標是每天練習英文。'
+},
 freediving:{pos:'名詞',band:'專門詞彙',topics:['自由潛水','運動'],ling:'不可數名詞；活動名稱',formation:'合成＋形式變化',parts:'free ＋ diving；diving 與 dive 有關',root:'此處 free 與 diving 是可辨識的詞，不硬套拉丁詞根。',family:'dive（潛水） · diver（潛水員） · diving（潛水活動）',collocations:['go freediving','freediving competition','freediving training'],chunks:['I go freediving on weekends.'],example:'I go freediving on weekends.',meaning:'我週末會去自由潛水。'},
 weekend:{pos:'名詞',band:'A1–A2',topics:['日常','旅遊'],ling:'可數名詞；weekends 是複數',formation:'合成詞',parts:'week（星期）＋ end（末尾）',root:'兩個完整單字組合，不需要另拆詞根。',family:'week · weekday · weekend',collocations:['on weekends','this weekend','a long weekend'],chunks:['What are you doing this weekend?'],example:'I go freediving on weekends.',meaning:'我週末會去自由潛水。'},
 about:{pos:'介系詞',band:'A1–A2',topics:['日常','閱讀'],ling:'本詞條是「關於」義；其他詞義與用法分開學',formation:'不拆解',parts:'先把 about 當作完整單字記憶',root:'不依現代拼字硬拆字首與詞根。',family:'本詞條暫不列詞族。',collocations:['read about','talk about','learn about'],chunks:['I want to learn about the ocean.'],example:'I read about freediving.',meaning:'我閱讀自由潛水相關的內容。'},
@@ -10,7 +20,7 @@ predict:{pos:'動詞',band:'B1–B2',topics:['工作','日常'],ling:'及物動�
 advertisement:{pos:'名詞',band:'B1–B2',topics:['工作','數位廣告'],ling:'可數名詞；一則廣告',formation:'字尾派生',parts:'advertise（刊登廣告）＋ -ment（名詞字尾）',root:'此處以現代詞族協助記憶，不把每個字母都拆成詞根。',family:'advertise · advertisement · advertising',collocations:['an online advertisement','place an advertisement'],chunks:['I saw an advertisement online.'],example:'I saw an advertisement online.',meaning:'我在網路上看到一則廣告。'},
 ski:{pos:'動詞',band:'A1–A2',topics:['滑雪','旅遊','運動'],ling:'本詞條為動詞「滑雪」；也可作名詞指滑雪板',formation:'形式變化',parts:'ski → skis → skied → skied → skiing',root:'skiing 保留兩個 i；不硬拆詞根。',family:'ski · skier · skiing',collocations:['go skiing','ski on snow'],chunks:['Do you ski?'],example:'Do you ski?',meaning:'你滑雪嗎？'}
 };
-const guideMeanings={freediving:'自由潛水',weekend:'週末',about:'關於',read:'閱讀',ocean:'海洋',reusable:'可重複使用的',predict:'預測',advertisement:'廣告',ski:'滑雪'};
+const guideMeanings={goal:'目標',freediving:'自由潛水',weekend:'週末',about:'關於',read:'閱讀',ocean:'海洋',reusable:'可重複使用的',predict:'預測',advertisement:'廣告',ski:'滑雪'};
 const defaultMeta={pos:'待分類',band:'',topics:[],ling:'尚未補充',formation:'待分類',parts:'尚未補充',root:'尚未補充',family:'尚未補充',collocations:[],chunks:[],example:'',meaning:''};
 function meta(a){return {...defaultMeta,...wordGuide[a.en.toLowerCase()],...a.meta}}
 let libraryScope='mine',libraryQuery='',libraryFilters={topic:'全部主題',pos:'全部詞性',band:'全部程度',formation:'全部構詞',familiarity:'全部熟悉度'};
