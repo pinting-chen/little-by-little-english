@@ -123,21 +123,46 @@ function saveStudyLine(text,meaning,theme,source){
   if(data.quotes.some(q=>q.text===text&&!q.archived))return false;
   data.quotes.push({id:crypto.randomUUID(),text,meaning,theme,source,url:'',chunks:'',usage:'',feeling:'',createdAt:new Date().toISOString()});save();return true;
 }
+function a2CourseList(){
+  const progress=a2Units.map(([, , , words],i)=>words.filter(([word])=>learnedA2()[a2Key(i,word)]).length);
+  const finished=a2Units.filter(([, , , words],i)=>progress[i]===words.length).length;
+  const first=a2Units.findIndex(([, , , words],i)=>progress[i]<words.length);
+  const recommended=a2Units[first];
+  return `<section class="card a2-intro">
+    <h1>A2 情境英文</h1>
+    <p>每課練 4 個單字或片語，先聽例句，再用一句英文說說自己的生活。</p>
+    <p class="muted">已完成 ${finished}／${a2Units.length} 課</p>
+    ${recommended?`<div class="a2-recommended"><h2>${progress[first]?'繼續學習':'建議下一課'} · ${esc(recommended[0])}</h2>
+      <p>${esc(recommended[2])}</p>
+      <button type="button" class="primary" data-study-topic="${first}">${progress[first]?'繼續這一課':'開始這一課'} →</button></div>`:''}
+  </section>
+  <h2 class="a2-course-heading">所有情境課</h2>
+  <div class="a2-courses">${a2Units.map(([name,,task,words],i)=>{
+    const count=progress[i];
+    const action=count===words.length?'再看這一課':count?'繼續學習':'開始學習';
+    return `<article class="card a2-course">
+      <h3>${esc(name)}</h3><p>${esc(task)}</p>
+      <p class="muted" lang="en">${words.map(([word])=>esc(word)).join(' · ')}</p>
+      <div class="a2-course-actions"><small>已看 ${count}／${words.length} 張</small>
+        <button type="button" data-study-topic="${i}" aria-label="${action}：${esc(name)}">${action} →</button></div>
+    </article>`;
+  }).join('')}</div>`;
+}
 a2Page=function(){
   const [title,topicName,task,items]=a2Units[a2Selected];
   const card=a2Card===null?null:items[a2Card];
   const completed=items.filter(([en])=>learnedA2()[a2Key(a2Selected,en)]).length;
   const [en,pos,zh,chunk,example,meaning]=card||[];
   const entry=en&&coreIndex().get(en.toLowerCase());
-  $('#view').innerHTML=`<section class="study-frame"><div class="study-head"><button type="button" id="a2-back">← ${a2Card===null?'學習總覽':'主題'}</button><strong>A2 · ${esc(title)}</strong><span>${card?`${a2Card+1}／${items.length}`:''}</span></div>
-  ${a2Card===null?`<div class="topic-choices">${a2Units.map(([name,,,words],i)=>`<button type="button" data-study-topic="${i}"><strong>${esc(name)}</strong><small>${words.filter(([word])=>learnedA2()[a2Key(i,word)]).length}／${words.length} 詞</small></button>`).join('')}</div>`:card?`<progress class="core-progress" value="${a2Card}" max="${items.length}" aria-label="主題進度"></progress><section class="card study-card flip-in">
+  $('#view').innerHTML=`<section class="study-frame"><div class="study-head"><button type="button" id="a2-back">← ${a2Card===null?'學習總覽':'所有情境課'}</button><strong>${a2Card===null?'':'A2 · '+esc(title)}</strong><span>${card?`${a2Card+1}／${items.length}`:''}</span></div>
+  ${a2Card===null?a2CourseList():card?`<progress class="core-progress" value="${a2Card}" max="${items.length}" aria-label="主題進度"></progress><section class="card study-card flip-in">
     <div class="study-word-head"><h2 lang="en">${esc(en)}</h2><button id="a2-favorite" aria-pressed="${!!entry?.favorite}" aria-label="收藏單字">${entry?.favorite?'♥':'♡'}</button></div>
     <p><span class="tag">${esc(pos)}</span> ${esc(zh)}</p><button id="a2-sound">聽單字</button>
     <div class="study-content"><p class="study-chunk" lang="en">${esc(chunk)}</p><div class="study-example"><strong lang="en">${esc(example)}</strong><p>${esc(meaning)}</p><div class="core-tools"><button id="a2-example">聽例句</button><button id="a2-line">收藏例句</button></div></div>
     ${studyIPA[en]||verbForms[en]?`<details><summary>更多</summary>${studyIPA[en]?`<p>/${studyIPA[en]}/</p>`:''}${verbForms[en]?`<p>過去式 · 過去分詞<br>${esc(verbForms[en])}</p>`:''}</details>`:''}</div>
     <div class="study-actions"><button id="a2-mark">${entry?.coreStatus==='review'?'已加入複習':'加入複習'}</button><button id="a2-next" class="primary">下一張 →</button></div></section>`:`<section class="card study-card"><h2>主題完成 · ${completed}／${items.length}</h2><p>${esc(task)}</p><div class="core-tools"><button id="a2-restart">再看一遍</button><button class="primary" id="a2-more">其他主題</button></div></section>`}</section>`;
   $('#a2-back').onclick=()=>{if(a2Card===null)go('overview');else{a2Card=null;a2Page();}};
-  document.querySelectorAll('[data-study-topic]').forEach(b=>b.onclick=()=>{a2Selected=Number(b.dataset.studyTopic);a2Card=nextA2(a2Selected);a2Page();});
+  document.querySelectorAll('[data-study-topic]').forEach(b=>b.onclick=()=>{a2Selected=Number(b.dataset.studyTopic);a2Card=nextA2(a2Selected);a2Page();window.scrollTo(0,0);});
   if($('#a2-restart'))$('#a2-restart').onclick=()=>{a2Card=0;a2Page();};
   if($('#a2-more'))$('#a2-more').onclick=()=>{a2Card=null;a2Page();};
   if(!card)return;
