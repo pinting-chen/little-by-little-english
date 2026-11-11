@@ -20,3 +20,12 @@
 
 #translate-form textarea,#translation-zh{width:100%;box-sizing:border-box;font-size:16px;margin-top:8px}#translation-word-panel label{display:block;margin:8px 0 4px}#translation-word-panel input{width:100%;box-sizing:border-box;font-size:16px}#translation-external{align-self:center}
 @media(max-width:850px){aside nav{grid-template-columns:repeat(5,minmax(0,1fr))}aside nav button{font-size:clamp(10px,2.9vw,14px)}aside nav .button-en{font-size:clamp(8px,2.2vw,10px);white-space:normal}}
+
+.a2-intro h1{margin:0 0 .4rem}
+.a2-recommended{margin-top:1rem;padding:1rem;border-radius:12px;background:#edf3ed}
+.a2-recommended h2,.a2-course h3{margin:0}
+.a2-course-heading{margin:1.5rem 0 .7rem}
+.a2-courses{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.a2-course{display:flex;flex-direction:column;margin:0}
+.a2-course-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:auto}
+@media(max-width:600px){.a2-courses{grid-template-columns:1fr}}
