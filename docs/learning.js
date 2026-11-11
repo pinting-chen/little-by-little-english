@@ -25,6 +25,20 @@ function startRound(ids=data.entries.filter(due).slice(0,reviewLimit).map(a=>a.i
   data.studyRound={day:today(),cursor:0,cards:ids.map(id=>({id,retry:false,practice})),base:ids.length};
   save();
 }
+function practiceEntry(id){
+  const round=activeRound();
+  if(round){
+    round.cards.splice(round.cursor,0,{id,retry:false,practice:true});
+    round.base++;
+    save();
+  }else{
+    startRound([id],true);
+  }
+  reviewDraft='';
+  reviewShown=false;
+  reviewFeedback='';
+  go('review');
+}
 let reviewDraft='';
 let reviewShown=false;
 let reviewFeedback='';

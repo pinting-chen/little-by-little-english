@@ -58,11 +58,23 @@ async function translateText(text){
   if(!translationEngine)translationEngine=await Translator.create(translationOptions);
   return translationEngine.translate(text);
 }
-function saveTranslationEntry(en,zh,type,note){
-  const existing=data.entries.find(e=>e.type===type&&e.en.toLowerCase()===en.toLowerCase());
-  if(existing)return false;
-  data.entries.push({id:crypto.randomUUID(),type,en,zh,topic:'日常',note,level:0,reviews:0});
-  save();return true;
+function saveTranslationEntry(en,zh,type,source='',sourceMeaning=''){
+  let entry=data.entries.find(e=>e.type===type&&e.en.trim().toLowerCase()===en.trim().toLowerCase());
+  if(!entry){
+    entry={id:crypto.randomUUID(),type,en,zh,topic:'日常',note:'',level:0,reviews:0};
+    data.entries.push(entry);
+  }
+  if(source)entry.source={en:source,zh:sourceMeaning};
+  save();
+  return entry;
+}
+function showSavedPractice(button,entry){
+  const practice=document.createElement('button');
+  practice.type='button';
+  practice.textContent='練習這一筆';
+  practice.onclick=()=>practiceEntry(entry.id);
+  button.replaceWith(practice);
+  practice.focus();
 }
 function renderTranslation(){
   mainNav.querySelectorAll('button').forEach(b=>{
@@ -95,9 +107,9 @@ async function showTranslation(text){
   $('#save-translation').onclick=e=>{
     if(!zh.value.trim()){zh.focus();$('#translation-status').textContent='請先填入中文意思。';return;}
     const type=words.length===1?'word':'phrase';
-    e.currentTarget.textContent=saveTranslationEntry(text,zh.value.trim(),type,'生活英文')?'已加入':'已在筆記中';
+    showSavedPractice(e.currentTarget,saveTranslationEntry(text,zh.value.trim(),type));
   };
-  document.querySelectorAll('[data-translation-word]').forEach(b=>b.onclick=()=>showTranslationWord(unique[Number(b.dataset.translationWord)],text));
+  document.querySelectorAll('[data-translation-word]').forEach(b=>b.onclick=()=>showTranslationWord(unique[Number(b.dataset.translationWord)],words.length>1?text:''));
   try{
     const translated=await translateText(text);
     if(page!=='translate'||request!==translateRequest)return;
@@ -118,7 +130,7 @@ async function showTranslationWord(word,source){
   $('#listen-translation-word').onclick=()=>listenTranslation(word,false,$('#translation-word-status'));
   $('#save-translation-word').onclick=e=>{
     if(!field.value.trim()){field.focus();$('#translation-word-status').textContent='請先填入中文意思。';return;}
-    e.currentTarget.textContent=saveTranslationEntry(word,field.value.trim(),'word',source)?'已加入單字庫':'已在單字庫';
+    showSavedPractice(e.currentTarget,saveTranslationEntry(word,field.value.trim(),'word',source,$('#translation-zh').value.trim()));
   };
   try{
     const meaning=await translateText(word);
